@@ -45,11 +45,13 @@ public class MainWindow {
         JPanel bottomPanel = new JPanel(new FlowLayout());
         JButton doneButton = new JButton("Mark Done Today");
         JButton deleteButton = new JButton("Delete Habit");
+        JButton statsButton = new JButton("View Stats");
         messageLabel = new JLabel(" ");
         messageLabel.setForeground(Color.BLUE);
         
         bottomPanel.add(doneButton);
         bottomPanel.add(deleteButton);
+        bottomPanel.add(statsButton);
         bottomPanel.add(messageLabel);
 
         // Add panels to frame
@@ -108,6 +110,19 @@ public class MainWindow {
                 messageLabel.setText("Deleted: " + name);
             } else {
                 messageLabel.setText("Please select a habit to delete!");
+            }
+        });
+                // View Stats Button
+        statsButton.addActionListener(e -> {
+            int selectedIndex = habitList.getSelectedIndex();
+
+            if (selectedIndex != -1) {
+                Habit selectedHabit = habits.get(selectedIndex);
+                String stats = StatsCalculator.getStatsText(selectedHabit);
+
+                JOptionPane.showMessageDialog(frame, stats, "Stats", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                messageLabel.setText("Please select a habit to view stats!");
             }
         });
 
