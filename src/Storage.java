@@ -1,70 +1,154 @@
 import java.io.*;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Storage {
-    private static final String FILE_PATH = "data.txt";
 
-    // Save all habits to file
+    private static final String FILE_PATH = "habits.csv";
+
+    // Save all habits to CSV
     public static void saveHabits(List<Habit> habits) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
-            for (Habit h : habits) {
-                writer.write("HABIT");
-                writer.newLine();
-                writer.write(h.getName());
-                writer.newLine();
-                writer.write(h.getCreationDate().toString());
-                writer.newLine();
-                writer.write(h.getColor());
-                writer.newLine();
-                writer.write(String.valueOf(h.getTargetPerWeek()));
-                writer.newLine();
+
+        try (BufferedWriter writer =
+                     new BufferedWriter(new FileWriter(FILE_PATH))) {
+
+            // CSV header
+            writer.write("name,creationDate,color,targetPerWeek,completedDates");
+            writer.newLine();
+
+            // Save each habit
+            for (Habit habit : habits) {
+
                 StringBuilder dates = new StringBuilder();
-                for (LocalDate d : h.getCompletedDates()) {
-                    dates.append(d.toString()).append(",");
+
+                // Join completed dates using ;
+                for (LocalDate date : habit.getCompletedDates()) {
+
+                    if (dates.length() > 0) {
+                        dates.append(";");
+                    }
+
+                    dates.append(date.toString());
                 }
-                writer.write(dates.toString());
+
+                writer.write(
+                        habit.getName() + "," +
+                        habit.getCreationDate() + "," +
+                        habit.getColor() + "," +
+                        habit.getTargetPerWeek() + "," +
+                        dates
+                );
+
                 writer.newLine();
             }
+
+            System.out.println("Habits saved successfully!");
+
         } catch (IOException e) {
-            System.out.println("Warning: could not save habits. " + e.getMessage());
+
+            System.out.println(
+                    "Warning: Could not save habits. "
+                            + e.getMessage()
+            );
         }
     }
 
-    // Load all habits from file — never crashes, even if file is missing/corrupted
+
+    // Load all habits from CSV
     public static List<Habit> loadHabits() {
+
         List<Habit> habits = new ArrayList<>();
+
         File file = new File(FILE_PATH);
 
+        // If the file does not exist, start fresh
         if (!file.exists()) {
-            System.out.println("No saved data found — starting fresh.");
+
+            System.out.println(
+                    "No saved data found. Starting fresh."
+            );
+
             return habits;
         }
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+        try (BufferedReader reader =
+                     new BufferedReader(new FileReader(file))) {
+
             String line;
+
+            // Skip the header
+            reader.readLine();
+
+            // Read each habit
             while ((line = reader.readLine()) != null) {
-                if (!line.equals("HABIT")) continue;
 
-                String name = reader.readLine();
-                LocalDate creationDate = LocalDate.parse(reader.readLine());
-                String color = reader.readLine();
-                int targetPerWeek = Integer.parseInt(reader.readLine());
-                String datesLine = reader.readLine();
+                try {
 
-                List<LocalDate> completedDates = new ArrayList<>();
-                if (datesLine != null && !datesLine.isEmpty()) {
-                    for (String d : datesLine.split(",")) {
-                        if (!d.isBlank()) {
-                            completedDates.add(LocalDate.parse(d));
+                    String[] data = line.split(",", -1);
+
+                    // Check if the row has all required fields
+                    if (data.length != 5) {
+
+                        System.out.println(
+                                "Skipping corrupted row: " + line
+                        );
+
+                        continue;
+                    }
+
+                    String name = data[0];
+
+                    LocalDate creationDate =
+                            LocalDate.parse(data[1]);
+
+                    String color = data[2];
+
+                    int targetPerWeek =
+                            Integer.parseInt(data[3]);
+
+                    List<LocalDate> completedDates =
+                            new ArrayList<>();
+
+                    // Read completed dates
+                    if (!data[4].isBlank()) {
+
+                        String[] dates =
+                                data[4].split(";");
+
+                        for (String date : dates) {
+
+                            completedDates.add(
+                                    LocalDate.parse(date)
+                            );
                         }
                     }
-                }
 
-                habits.add(new Habit(name, creationDate, color, targetPerWeek, completedDates));
+                    Habit habit = new Habit(
+                            name,
+                            creationDate,
+                            color,
+                            targetPerWeek,
+                            completedDates
+                    );
+
+                    habits.add(habit);
+
+                } catch (Exception e) {
+
+                    // Skip only the bad row instead of crashing
+                    System.out.println(
+                            "Skipping corrupted row: " + line
+                    );
+                }
             }
-        } catch (Exception e) {
-            System.out.println("Warning: data.txt was corrupted, some data may be missing. " + e.getMessage());
+
+        } catch (IOException e) {
+
+            System.out.println(
+                    "Warning: Could not load habits. "
+                            + e.getMessage()
+            );
         }
 
         return habits;
