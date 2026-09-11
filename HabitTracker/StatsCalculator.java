@@ -1,97 +1,68 @@
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class StatsCalculator {
 
+    // 1. Calculate the longest streak ever
     public static int getLongestStreak(Habit habit) {
-        TreeSet<LocalDate> dates = new TreeSet<>();
+        List<LocalDate> dates = habit.getCompletedDates();
+        if (dates.isEmpty()) return 0;
 
-        for (String date : habit.completedDates) {
-            dates.add(LocalDate.parse(date));
-        }
+        // Sort the dates from oldest to newest
+        List<LocalDate> sortedDates = new ArrayList<>(dates);
+        Collections.sort(sortedDates);
 
-        int longest = 0;
-        int current = 0;
-        LocalDate previous = null;
+        int longest = 1;
+        int current = 1;
 
-        for (LocalDate date : dates) {
-            if (previous != null && date.equals(previous.plusDays(1))) {
+        for (int i = 1; i < sortedDates.size(); i++) {
+            // If this date is exactly 1 day after the previous date
+            if (sortedDates.get(i).equals(sortedDates.get(i - 1).plusDays(1))) {
                 current++;
-            } else {
+                if (current > longest) {
+                    longest = current;
+                }
+            } else if (!sortedDates.get(i).equals(sortedDates.get(i - 1))) {
+                // If it's not the same day and not the next day, reset streak
                 current = 1;
             }
-
-            if (current > longest) {
-                longest = current;
-            }
-
-            previous = date;
         }
-
         return longest;
     }
 
-    public static int getTotalCompletedDays(Habit habit) {
-        TreeSet<LocalDate> dates = new TreeSet<>();
-
-        for (String date : habit.completedDates) {
-            dates.add(LocalDate.parse(date));
-        }
-
-        return dates.size();
-    }
-
-    public static int getCompletionRate(Habit habit) {
-        TreeSet<LocalDate> dates = new TreeSet<>();
-
-        for (String date : habit.completedDates) {
-            dates.add(LocalDate.parse(date));
-        }
-
-        if (dates.isEmpty()) {
-            return 0;
-        }
-
-        LocalDate firstDate = dates.first();
+    // 2. Calculate completion rate for the last 30 days (%)
+    public static double getCompletionRateLast30Days(Habit habit) {
+        List<LocalDate> dates = habit.getCompletedDates();
         LocalDate today = LocalDate.now();
+        LocalDate thirtyDaysAgo = today.minusDays(30);
 
-        long totalDays = ChronoUnit.DAYS.between(firstDate, today) + 1;
-
-        if (totalDays <= 0) {
-            totalDays = 1;
-        }
-
-        long completedDays = dates.size();
-
-        return (int) ((completedDays * 100) / totalDays);
-    }
-
-    public static int getThisWeekCount(Habit habit) {
-        int count = 0;
-        LocalDate today = LocalDate.now();
-
-        for (int i = 0; i < 7; i++) {
-            String date = today.minusDays(i).toString();
-
-            if (habit.completedDates.contains(date)) {
+        long count = 0;
+        for (LocalDate date : dates) {
+            if (!date.isBefore(thirtyDaysAgo) && !date.isAfter(today)) {
                 count++;
             }
         }
 
-        return count;
+        return (count / 30.0) * 100.0; 
     }
 
-    public static String getStatsText(Habit habit) {
-        String text = "";
+    // 3. Calculate weekly progress based on targetPerWeek
+    public static String getWeeklyProgress(Habit habit) {
+        List<LocalDate> dates = habit.getCompletedDates();
+        LocalDate today = LocalDate.now();
+        
+        // Find the start of the current week (Monday)
+        LocalDate startOfWeek = today.minusDays(today.getDayOfWeek().getValue() - 1);
 
-        text += "Habit: " + habit.name + "\n";
-        text += "Current streak: " + habit.getStreak() + " days\n";
-        text += "Longest streak: " + getLongestStreak(habit) + " days\n";
-        text += "Total completed days: " + getTotalCompletedDays(habit) + "\n";
-        text += "Completion rate: " + getCompletionRate(habit) + "%\n";
-        text += "Completed in last 7 days: " + getThisWeekCount(habit) + "/7";
+        long count = 0;
+        for (LocalDate date : dates) {
+            if (!date.isBefore(startOfWeek) && !date.isAfter(today)) {
+                count++;
+            }
+        }
 
-        return text;
+        return count + " / " + habit.getTargetPerWeek();
     }
 }

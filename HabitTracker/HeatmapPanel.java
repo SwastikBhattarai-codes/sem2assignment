@@ -37,7 +37,7 @@ public class HeatmapPanel extends JPanel {
                 int x = week * (squareSize + gap);
                 int y = day * (squareSize + gap);
 
-                if (habit.completedDates.contains(date.toString())) {
+                if (habit.getCompletedDates().contains(date)) {
                     g2.setColor(new Color(76, 175, 80)); // completed
                 } else {
                     g2.setColor(new Color(220, 220, 220)); // missed
