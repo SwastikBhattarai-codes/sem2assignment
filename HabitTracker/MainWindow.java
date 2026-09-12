@@ -30,7 +30,8 @@ public class MainWindow {
         // CENTER: Habit list
         listModel = new DefaultListModel<>();
         habitList = new JList<>(listModel);
-        habitList.setFont(new Font("Arial", Font.PLAIN, 18));
+        habitList.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 18));
+    
         JScrollPane scrollPane = new JScrollPane(habitList);
         scrollPane.setBorder(BorderFactory.createTitledBorder("Your Habits (Select one)"));
         refreshList();
